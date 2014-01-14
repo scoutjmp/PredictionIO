@@ -1,12 +1,12 @@
 import pandas
 
-def BatchProcess(users, item_attributes_map, user_actions_map, verbose=0):
+def BatchProcess(users, item_attributes_map, user_items_map, verbose=0):
   """Construct user model.
 
   Args:
     users: a list of uid
     item_attributes_map: iid -> [attribute]
-    user_actions_map: uid -> [iid], assume all actions are equal weight
+    user_items_map: uid -> [iid], assume all actions are equal weight
 
   Returns:
     A pandas DataFrame. Column is user id, Index is attribute.
@@ -34,10 +34,10 @@ def BatchProcess(users, item_attributes_map, user_actions_map, verbose=0):
     print 'item count:', len(item_list)
 
   user_df = pandas.DataFrame(
-      index=attribute_list, columns=user_actions_map.keys()).fillna(0)
+      index=attribute_list, columns=user_items_map.keys()).fillna(0)
 
   for user in user_df.columns:
-    for item in user_actions_map[user]:
+    for item in user_items_map[user]:
       # skip unseen item
       if item not in item_list:
         continue
@@ -56,7 +56,27 @@ def BatchProcess(users, item_attributes_map, user_actions_map, verbose=0):
   return user_df
     
 
+def RecommendUserList(item, item_attributes, user_df):
+  """
+  Args:
+    item: iid
+    item_attributes: [attribute]
+    user_df: A pandas DataFrame. uid x attribute. Output of BatchProcess.
 
+  Returns;
+    A pandas Series of sorted user. Index is user, value is score.
+  """
+  item_series = pandas.Series(0., index=user_df.index)
+  for attribute in item_attributes:
+    item_series[attribute] = 1.
+  item_series /= item_series.sum()
 
+  # dot product with user preference model
+  user_item_df = user_df.mul(item_series, axis=0)
+  user_item_score = user_item_df.sum()
+
+  user_item_score.sort(ascending=False)
+
+  return user_item_score
 
 
