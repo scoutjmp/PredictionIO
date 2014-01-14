@@ -1,4 +1,3 @@
-
 # To Run:
 # python -m PredictionIO.experimental.realtime.main
 
@@ -41,7 +40,7 @@ def Run():
 
   user_df = batch.BatchProcess(users, item_attributes_map, user_actions_map)
 
-  batch.RecommendUserList(item, item_attributes, user_df)
+  #batch.RecommendUserList(item, item_attributes, user_df)
 
 
   
