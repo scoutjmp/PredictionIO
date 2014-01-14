@@ -22,6 +22,7 @@ import Contexts.stepExecutionContext
 
 object Jobs {
   val algoJobGroup = "predictionio-algo"
+  val bLessJobGroup = "predictionio-b-less"
   val offlineEvalJobGroup = "predictionio-offlineeval"
   val offlineTuneJobGroup = "predictionio-offlinetune"
 
@@ -35,6 +36,13 @@ object Jobs {
     job.getJobDataMap().put("algoid", algo.id)
     job.getJobDataMap().put("engineinfoid", engine.infoid)
 
+    job
+  }
+
+  def bLessJob(config: Config, app: App, engine: Engine, algo: Algo) = {
+    val job = newJob(classOf[BLessJob]) withIdentity (algo.id.toString, bLessJobGroup) storeDurably (true) build ()
+    job.getJobDataMap().put("algoid", algo.id)
+    job.getJobDataMap().put("engineinfoid", engine.infoid)
     job
   }
 
@@ -249,6 +257,88 @@ class AlgoJob extends InterruptableJob {
           } getOrElse {
             Logger.warn(s"${logPrefix}Not starting algorithm training because information of this algorithm cannot be found from the database")
           }
+        } getOrElse {
+          Logger.warn(s"${logPrefix}Not starting algorithm training because the app that owns this algorithm cannot be found from the database")
+        }
+      } getOrElse {
+        Logger.warn(s"${logPrefix}Not starting algorithm training because the engine that owns this algorithm cannot be found from the database")
+      }
+    } getOrElse {
+      Logger.warn(s"${logPrefix}Not starting algorithm training because the algorithm cannot be found from the database")
+    }
+  }
+
+  override def interrupt() = {
+    this.synchronized {
+      kill = true
+      proc map { _.destroy }
+    }
+  }
+}
+
+@DisallowConcurrentExecution
+@PersistJobDataAfterExecution
+class BLessJob extends InterruptableJob {
+  @volatile
+  var kill = false
+
+  var exitCode: Int = 0
+  var finishFlag: Boolean = false
+
+  @volatile
+  var proc: Option[Process] = None
+
+  override def execute(context: JobExecutionContext) = {
+    val jobDataMap = context.getMergedJobDataMap
+    val algoid = jobDataMap.getInt("algoid")
+    val engineinfoid = jobDataMap.getString("engineinfoid")
+    val config = Scheduler.config
+    val apps = Scheduler.apps
+    val engines = Scheduler.engines
+    val algos = Scheduler.algos
+    val algoInfos = Scheduler.algoInfos
+    val logPrefix = s"Algo ID ${algoid}: (B-less) "
+
+    algos.get(algoid) map { algo =>
+      engines.get(algo.engineid) map { engine =>
+        apps.get(engine.appid) map { app =>
+
+          Logger.info(s"${logPrefix}Launching job to process items without any associated behavioral actions")
+          val batchcommands = Seq("echo foobar")
+          val commands = batchcommands map { c => Jobs.setSharedAttributes(new StringTemplate(c), config, app, engine, Some(algo), None, None, None).toString }
+
+          commands map { _.trim } foreach { c =>
+            this.synchronized {
+              if (!kill && !c.isEmpty && exitCode == 0) {
+                Logger.info(s"${logPrefix}Going to run: $c")
+                proc = Some(Process(c).run)
+                Logger.info(s"${logPrefix}Scheduler waiting for sub-process to finish")
+              }
+            }
+
+            if (!kill && !c.isEmpty && exitCode == 0) {
+              exitCode = proc.get.exitValue
+              Logger.info(s"${logPrefix}Sub-process has finished with exit code ${exitCode}")
+            }
+          }
+
+          finishFlag = true
+
+          /** Display completion information */
+          if (kill) {
+            Logger.info(s"${logPrefix}Sub-process was killed upon request")
+          } else if (exitCode == 0) {
+            //Logger.info(s"${logPrefix}Running database specific after-logic for model set ${!algo.modelset}")
+            //modelData.after(algo.id, !algo.modelset)
+            //Logger.info(s"${logPrefix}Flipping model set flag to ${!algo.modelset}")
+            //algos.update(algo.copy(modelset = !algo.modelset))
+            //Logger.info(s"${logPrefix}Running database specific deletion for model set ${algo.modelset}")
+            //modelData.delete(algo.id, algo.modelset)
+            Logger.info(s"${logPrefix}Job completed")
+          } else {
+            Logger.warn(s"${logPrefix}Not flipping model set flag because the algo job returned non-zero exit code")
+          }
+
         } getOrElse {
           Logger.warn(s"${logPrefix}Not starting algorithm training because the app that owns this algorithm cannot be found from the database")
         }
