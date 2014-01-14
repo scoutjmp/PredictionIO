@@ -172,6 +172,15 @@ object Scheduler extends Controller {
             } getOrElse {
               Logger.info(s"${logPrefix}Giving up setting up batch algo job because it does not have any batch command")
             }
+
+            // Setup b-less jobs for itemrec
+            if (engine.infoid == "itemrec") {
+              Logger.info(s"${logPrefix}(B-less) Setting up processor job for items without behavioral data (run every 10 minutes from now)")
+              val job = Jobs.bLessJob(config, app, engine, algo)
+              scheduler.addJob(job, true)
+              val trigger = newTrigger() forJob (jobKey(algoid, Jobs.bLessJobGroup)) withIdentity (algoid, Jobs.bLessJobGroup) startNow () withSchedule (simpleSchedule() withIntervalInMinutes (10) repeatForever ()) build ()
+              scheduler.scheduleJob(trigger)
+            }
           }
         } else {
           /** Stop any algo job if it is undeployed */
@@ -200,6 +209,36 @@ object Scheduler extends Controller {
 
           if (scheduler.checkExists(triggerkey) == true) {
             scheduler.unscheduleJob(triggerkey)
+          }
+
+          if (engine.infoid == "itemrec") {
+            val bLessJobKey = jobKey(algoid, Jobs.bLessJobGroup)
+            if (scheduler.checkExists(bLessJobKey)) {
+              /** The following checks only jobs in this particular scheduler node. */
+              /** TODO: Clustering support. */
+              try {
+                val running = scheduler.getCurrentlyExecutingJobs() map { context =>
+                  val jobDetail = context.getJobDetail()
+                  val jobKey = jobDetail.getKey()
+                  jobKey.getName() == algoid
+                } reduce { (a, b) => a || b }
+                if (running) {
+                  try {
+                    scheduler.interrupt(bLessJobKey)
+                    Logger.info(s"${logPrefix}(B-less) Stopping")
+                  } catch {
+                    case e: UnableToInterruptJobException => Logger.warn(s"${logPrefix}(B-less) Unable to stop")
+                  }
+                }
+              } catch {
+                case e: UnsupportedOperationException => Logger.info(s"${logPrefix}(B-less) Not running")
+              }
+            }
+
+            val bLessTriggerKey = triggerKey(algoid, Jobs.bLessJobGroup)
+            if (scheduler.checkExists(bLessTriggerKey) == true) {
+              scheduler.unscheduleJob(bLessTriggerKey)
+            }
           }
         }
       } getOrElse {
