@@ -1,6 +1,6 @@
 # To Run:
-# python -m PredictionIO.experimental.realtime.realtime_model \
-#   --item=i.tsv --action=r.tsv --output=u.pkl
+#py -m PredictionIO.experimental.realtime.realtime_recommendation \
+#  --user_model=u.pkl --new_item=i.tsv --output=recommend.tsv
 
 import argparse
 import operator
