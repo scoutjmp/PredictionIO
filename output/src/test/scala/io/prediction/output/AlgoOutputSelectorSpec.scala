@@ -19,6 +19,7 @@ class AlgoOutputSelectorSpec extends Specification {
     "PredictionIO AlgoOutputSelector Specification" ^
       p ^
       "get itemrec output from a valid engine" ! itemRecOutputSelection(algoOutputSelector) ^
+      "get real time itemrec output from a valid engine" ! itemRecRealTimeOutputSelection(algoOutputSelector) ^
       "get itemrec output with geo from a valid engine" ! itemRecOutputSelectionWithLatlng(algoOutputSelector) ^
       //"get itemrec output from a valid engine without seen items"               ! itemRecOutputSelectionUnseenOnly(algoOutputSelector) ^
       //"get itemrec output from a valid engine with an unsupported algorithm"    ! itemRecOutputSelectionUnsupportedAlgo(algoOutputSelector) ^
@@ -41,6 +42,7 @@ class AlgoOutputSelectorSpec extends Specification {
   val mongoItemRecScores = new MongoItemRecScores(new Config, mongoDb)
   val mongoItemSimScores = new MongoItemSimScores(new Config, mongoDb)
   val algoOutputSelector = new AlgoOutputSelector(mongoAlgos)
+  val mongoRealTimeItemRecScores = new MongoRealTimeItemRecScores(mongoDb)
 
   val dummyApp = App(
     id = 0,
@@ -226,6 +228,84 @@ class AlgoOutputSelectorSpec extends Specification {
         "item_e",
         "item_x",
         "item_g"))
+
+  }
+
+  /** ItemRec engine. */
+  def itemRecRealTimeOutputSelection(algoOutputSelector: AlgoOutputSelector) = {
+    val engine = Engine(
+      id = 0,
+      appid = dummyApp.id,
+      name = "itemRecOutputSelection",
+      infoid = "itemrec",
+      itypes = Some(Seq("foo", "bar")),
+      params = Map("serendipity" -> 0, "freshness" -> 5)
+    )
+    val engineid = mongoEngines.insert(engine)
+
+    val algo = Algo(
+      id = 0,
+      engineid = engineid,
+      name = "itemRecOutputSelection",
+      infoid = "pdio-knnitembased",
+      command = "itemRecOutputSelection",
+      params = Map("foo" -> "bar"),
+      settings = Map("dead" -> "beef"),
+      modelset = true,
+      createtime = DateTime.now,
+      updatetime = DateTime.now,
+      status = "deployed",
+      offlineevalid = None
+    )
+    val algoid = mongoAlgos.insert(algo)
+
+    val scores = Seq(ItemRecScore(
+      uid = "user1",
+      iids = Seq("item_z", "item_h", "item_d", "item_g", "item_e", "item_f", "item_x", "item_y", "item_b", "item_c", "item_a"),
+      scores = Seq(11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1),
+      itypes = Seq(Seq("unrelated"), Seq("foo"), Seq("foo"), Seq("bar"), Seq("bar"), Seq("foo"), Seq("bar"), Seq("foo"), Seq("foo"), Seq("bar"), Seq("bar")),
+      appid = dummyApp.id,
+      algoid = algoid,
+      modelset = true))
+
+    scores foreach { mongoItemRecScores.insert(_) }
+
+    val realTimeScores = Seq(RealTimeItemRecScore(
+      uid = "user1",
+      iid = "real_a",
+      score = 4,
+      time = DateTime.now.hour(23).minute(13),
+      itypes = List("bar"),
+      appid = dummyApp.id,
+      algoid = algoid
+    //      modelset = true
+    ), RealTimeItemRecScore(
+      uid = "user1",
+      iid = "real_b",
+      score = 5,
+      time = DateTime.now.hour(23).minute(14),
+      itypes = List("foo"),
+      appid = dummyApp.id,
+      algoid = algoid
+    //      modelset = true
+    ), RealTimeItemRecScore(
+      uid = "user1",
+      iid = "real_c",
+      score = 7,
+      time = DateTime.now.hour(23).minute(15),
+      itypes = List("foo"),
+      appid = dummyApp.id,
+      algoid = algoid
+    //      modelset = true
+    ))
+
+    realTimeScores foreach { mongoRealTimeItemRecScores.save(_) }
+
+    val result = algoOutputSelector.itemRecSelection("user1", 10, Some(Seq("bar", "foo")), None, None, None)(dummyApp, engine.copy(id = engineid))
+    val resultBar = algoOutputSelector.itemRecSelection("user1", 10, Some(Seq("bar")), None, None, None)(dummyApp, engine.copy(id = engineid))
+
+    result must beEqualTo(Seq("real_c", "real_b", "real_a", "item_h", "item_d", "item_g", "item_e", "item_f", "item_x", "item_y")) and
+      (resultBar must beEqualTo(Seq("real_a", "item_g", "item_e", "item_x", "item_c", "item_a")))
 
   }
 

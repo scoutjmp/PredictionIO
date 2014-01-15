@@ -31,10 +31,14 @@ object ItemRecAlgoOutput {
      * of documents that can be returned from a query with geospatial constraint is 100.
      * A "manual join" is still feasible with this size.
      */
-    val iids: Iterator[String] = latlng.map { ll =>
-      val geoItems = items.getByAppidAndLatlng(app.id, ll, within, unit).map(_.id).toSet
+    val geoItems: Option[Set[String]] = latlng.map { ll =>
+      items.getByAppidAndLatlng(app.id, ll, within, unit).map(_.id).toSet
+    }
+
+    val iids: Iterator[String] = geoItems.map { nearByItems =>
+      //val geoItems = items.getByAppidAndLatlng(app.id, ll, within, unit).map(_.id).toSet
       // use n = 0 to return all available iids for now
-      knnitembased.ItemRecKNNItemBasedAlgoOutput.output(uid, 0, itypes).filter { geoItems(_) }
+      knnitembased.ItemRecKNNItemBasedAlgoOutput.output(uid, 0, itypes).filter { nearByItems(_) }
     }.getOrElse {
       // use n = 0 to return all available iids for now
       knnitembased.ItemRecKNNItemBasedAlgoOutput.output(uid, 0, itypes)
@@ -58,7 +62,7 @@ object ItemRecAlgoOutput {
     val freshness = engine.params.get("freshness") map { _.asInstanceOf[Int] }
 
     /** Freshness output. */
-    val finalOutput = freshness map { f =>
+    /*val finalOutput = freshness map { f =>
       if (f > 0) {
         val freshnessN = scala.math.round(n * f / 10)
         val otherN = n - freshnessN
@@ -68,7 +72,34 @@ object ItemRecAlgoOutput {
         finalFreshnessOutput ++ (serendipityOutput filterNot { finalFreshnessOutputSet(_) }).take(otherN)
       } else
         serendipityOutput
-    } getOrElse serendipityOutput
+    } getOrElse serendipityOutput*/
+
+    /**
+     * Take number of fN = (n * f / 10) from real time rec
+     * Then put the real time rec in front of rec, and put origin top (n - real time rec.size) as rest
+     */
+    val finalOutput = freshness.map { f =>
+      val freshnessN = scala.math.round(n * f / 10)
+
+      if (freshnessN > 0) {
+        val freshnessOutput: Iterator[String] = geoItems.map { nearByItems =>
+          // TODO: hardcode to take 3x more data if geo is used the filter nearby items
+          knnitembased.RealTimeItemRecKNNItemBasedAlgoOutput.output(uid, n * 3, itypes).filter { nearByItems(_) }
+        }.getOrElse {
+          knnitembased.RealTimeItemRecKNNItemBasedAlgoOutput.output(uid, freshnessN, itypes)
+        }
+        // based on actual freshnessOutput, calculate the remaining otherN from the original
+        // recommended list
+        val finalFreshnessOutput = freshnessOutput.take(freshnessN).toList // convert iterator to list
+        val reaminingN = n - finalFreshnessOutput.size
+        val finalFreshnessOutputSet = finalFreshnessOutput.toSet
+        finalFreshnessOutput ++ (serendipityOutput.filterNot { finalFreshnessOutputSet(_) }).take(reaminingN)
+      } else {
+        serendipityOutput
+      }
+    }.getOrElse {
+      serendipityOutput
+    }
 
     finalOutput
   }
