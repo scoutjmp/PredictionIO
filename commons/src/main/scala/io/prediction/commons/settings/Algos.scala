@@ -34,6 +34,7 @@ case class Algo(
   modelset: Boolean,
   createtime: DateTime,
   updatetime: DateTime,
+  incupdatetime: Option[DateTime] = None,
   status: String = "",
   offlineevalid: Option[Int],
   offlinetuneid: Option[Int] = None,

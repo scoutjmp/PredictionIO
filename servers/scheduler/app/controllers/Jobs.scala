@@ -213,6 +213,8 @@ class AlgoJob extends InterruptableJob {
           algoInfos.get(algo.infoid) map { info =>
             info.batchcommands map { batchcommands =>
               Logger.info(s"${logPrefix}Current model set is ${algo.modelset}")
+              Logger.info(s"${logPrefix}Recording start time")
+              val starttime = DateTime.now
               Logger.info(s"${logPrefix}Running database specific before-logic for model set ${!algo.modelset}")
               val modelData = config.getModeldata(engine.infoid)
               modelData.before(algo.id, !algo.modelset)
@@ -243,8 +245,8 @@ class AlgoJob extends InterruptableJob {
               } else if (exitCode == 0) {
                 Logger.info(s"${logPrefix}Running database specific after-logic for model set ${!algo.modelset}")
                 modelData.after(algo.id, !algo.modelset)
-                Logger.info(s"${logPrefix}Flipping model set flag to ${!algo.modelset}")
-                algos.update(algo.copy(modelset = !algo.modelset))
+                Logger.info(s"${logPrefix}Flipping model set flag to ${!algo.modelset} and saving start time as algo update time")
+                algos.update(algo.copy(modelset = !algo.modelset, updatetime = starttime))
                 Logger.info(s"${logPrefix}Running database specific deletion for model set ${algo.modelset}")
                 modelData.delete(algo.id, algo.modelset)
                 Logger.info(s"${logPrefix}Job completed")
@@ -302,7 +304,8 @@ class BLessJob extends InterruptableJob {
     algos.get(algoid) map { algo =>
       engines.get(algo.engineid) map { engine =>
         apps.get(engine.appid) map { app =>
-
+          Logger.info(s"${logPrefix}Recording start time")
+          val starttime = DateTime.now
           Logger.info(s"${logPrefix}Launching job to process items without any associated behavioral actions")
           val batchcommands = Seq("echo foobar")
           val commands = batchcommands map { c => Jobs.setSharedAttributes(new StringTemplate(c), config, app, engine, Some(algo), None, None, None).toString }
@@ -334,6 +337,8 @@ class BLessJob extends InterruptableJob {
             //algos.update(algo.copy(modelset = !algo.modelset))
             //Logger.info(s"${logPrefix}Running database specific deletion for model set ${algo.modelset}")
             //modelData.delete(algo.id, algo.modelset)
+            Logger.info(s"${logPrefix}Saving start time as algo incremental update time")
+            algos.update(algo.copy(incupdatetime = Some(starttime)))
             Logger.info(s"${logPrefix}Job completed")
           } else {
             Logger.warn(s"${logPrefix}Not flipping model set flag because the algo job returned non-zero exit code")
