@@ -6,7 +6,7 @@ import datetime
 import csv
 import sys, getopt
 import argparse
-
+import time
 
 def write_items_to_file(cursor, filename):
     """write items mongo cursor to a file 
@@ -32,23 +32,31 @@ def write_items_to_file(cursor, filename):
             #print this_attr
             #print map(lambda a: item[a], this_attr)
 
-            def get_attr_value(name):
-                if name in item:
-                    return item[name]
-                else:
-                    return 0
+            # ca_ is special prefix reserved for custom attributes
+            ca_prefix = "ca_"
+            ca_len = len(ca_prefix)
+            custom_attr = dict((k,v) for k,v in item.iteritems() if k.startswith(ca_prefix))
+            #print custom_attr
+
+            attr_values = []
+
+            for k,v in custom_attr.iteritems():
+                t = "%s=%s" % (k[ca_len:],v) # strip off ca_prefix in key
+                attr_values.append(t)
 
             # attr value of this item in list
-            attr_values = map(get_attr_value, attr_names)
+
             #print attr_values
             row = []
-            row.extend([item['_id'], item['starttime'].isoformat()])
+            #st = item['starttime'].isoformat()
+            st = int(time.mktime(item['starttime'].timetuple()) * 1000 + item['starttime'].microsecond / 1000)
+            row.extend([item['_id'], st])
             row.extend(attr_values)
             #print row
         
             writer.writerow(row)
 
-    #print required_names + attr_names
+    print required_names + attr_names
 
 
 def write_u2i_to_file(cursor, filename, implicit=False):
@@ -70,11 +78,14 @@ def write_u2i_to_file(cursor, filename, implicit=False):
             else:
                 pref = u2i['v']
 
+            #t = u2i['t'].isoformat()
+            t = int(time.mktime(u2i['t'].timetuple()) * 1000 + u2i['t'].microsecond / 1000)
+
             if implicit:
                 # no preference value
-                row = [u2i['uid'], u2i['iid'], u2i['t'].isoformat()]
+                row = [u2i['uid'], u2i['iid'], t]
             else:
-                row = [u2i['uid'], u2i['iid'], pref, u2i['t'].isoformat()]
+                row = [u2i['uid'], u2i['iid'], pref, t]
             
             writer.writerow(row)
 
