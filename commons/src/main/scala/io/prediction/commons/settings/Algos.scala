@@ -34,7 +34,6 @@ case class Algo(
   modelset: Boolean,
   createtime: DateTime,
   updatetime: DateTime,
-  incupdatetime: Option[DateTime] = None,
   status: String = "",
   offlineevalid: Option[Int],
   offlinetuneid: Option[Int] = None,
@@ -78,6 +77,10 @@ trait Algos extends Common {
    * Algos that are part of an offline evaluation or tuning are not counted.
    */
   def existsByEngineidAndName(engineid: Int, name: String): Boolean
+
+  def setModelSet(id: Int, modelset: Boolean)
+
+  def setUpdateTime(id: Int, time: DateTime)
 
   implicit val formats = Serialization.formats(NoTypeHints) + new AlgoSerializer
 

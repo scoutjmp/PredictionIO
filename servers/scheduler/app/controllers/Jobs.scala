@@ -245,8 +245,10 @@ class AlgoJob extends InterruptableJob {
               } else if (exitCode == 0) {
                 Logger.info(s"${logPrefix}Running database specific after-logic for model set ${!algo.modelset}")
                 modelData.after(algo.id, !algo.modelset)
-                Logger.info(s"${logPrefix}Flipping model set flag to ${!algo.modelset} and saving start time as algo update time")
-                algos.update(algo.copy(modelset = !algo.modelset, updatetime = starttime))
+                Logger.info(s"${logPrefix}Flipping model set flag to ${!algo.modelset}")
+                algos.setModelSet(algo.id, !algo.modelset)
+                Logger.info(s"${logPrefix}Saving start time as algo update time")
+                algos.setUpdateTime(algo.id, starttime)
                 Logger.info(s"${logPrefix}Running database specific deletion for model set ${algo.modelset}")
                 modelData.delete(algo.id, algo.modelset)
                 Logger.info(s"${logPrefix}Job completed")
@@ -337,8 +339,8 @@ class BLessJob extends InterruptableJob {
             //algos.update(algo.copy(modelset = !algo.modelset))
             //Logger.info(s"${logPrefix}Running database specific deletion for model set ${algo.modelset}")
             //modelData.delete(algo.id, algo.modelset)
-            Logger.info(s"${logPrefix}Saving start time as algo incremental update time")
-            algos.update(algo.copy(incupdatetime = Some(starttime)))
+            Logger.info(s"${logPrefix}Saving start time as algo update time")
+            algos.setUpdateTime(algo.id, starttime)
             Logger.info(s"${logPrefix}Job completed")
           } else {
             Logger.warn(s"${logPrefix}Not flipping model set flag because the algo job returned non-zero exit code")

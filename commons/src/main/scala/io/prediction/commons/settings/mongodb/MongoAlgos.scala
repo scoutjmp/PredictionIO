@@ -129,6 +129,10 @@ class MongoAlgos(db: MongoDB) extends Algos {
 
   def existsByEngineidAndName(engineid: Int, name: String) = algoColl.findOne(MongoDBObject("name" -> name, "engineid" -> engineid, "offlineevalid" -> null)) map { _ => true } getOrElse false
 
+  def setModelSet(id: Int, modelset: Boolean) = algoColl.update(MongoDBObject("_id" -> id), $set("modelset" -> modelset))
+
+  def setUpdateTime(id: Int, time: DateTime) = algoColl.update(MongoDBObject("_id" -> id), $set("updatetime" -> time))
+
   class MongoAlgoIterator(it: MongoCursor) extends Iterator[Algo] {
     def next = dbObjToAlgo(it.next)
     def hasNext = it.hasNext

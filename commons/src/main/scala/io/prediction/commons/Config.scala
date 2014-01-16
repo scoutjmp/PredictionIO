@@ -672,6 +672,16 @@ class Config {
     }
   }
 
+  /** Obtains an RealTimeItemRecScores object with configured backend type. */
+  def getModeldataRealTimeItemRecScores(): modeldata.RealTimeItemRecScores = {
+    modeldataDbType match {
+      case "mongodb" => {
+        new modeldata.mongodb.MongoRealTimeItemRecScores(modeldataMongoDb.get)
+      }
+      case _ => throw new RuntimeException("Invalid modeldata database type: " + modeldataDbType)
+    }
+  }
+
   /** Obtains a generic ModelData object for training with configured backend type. */
   def getModeldataTraining(engineinfoid: String): modeldata.ModelData = {
     modeldataDbType match {
@@ -705,6 +715,16 @@ class Config {
     modeldataDbType match {
       case "mongodb" => {
         new modeldata.mongodb.MongoItemSimScores(this, modeldataTrainingMongoDb.get)
+      }
+      case _ => throw new RuntimeException("Invalid modeldata database type: " + modeldataTrainingDbType)
+    }
+  }
+
+  /** Obtains an ItemRecScores object with configured backend type. */
+  def getModeldataTrainingRealTimeItemRecScores(): modeldata.RealTimeItemRecScores = {
+    modeldataDbType match {
+      case "mongodb" => {
+        new modeldata.mongodb.MongoRealTimeItemRecScores(modeldataTrainingMongoDb.get)
       }
       case _ => throw new RuntimeException("Invalid modeldata database type: " + modeldataTrainingDbType)
     }
