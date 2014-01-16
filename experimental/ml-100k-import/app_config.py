@@ -1,0 +1,7 @@
+
+
+APP_KEY = 'wpOXBd8Oru1ankzyNsVh08WCszSnogxOS0Kq7zwuLpAtYEBktEFHbX1A1d9WYiCb'
+API_URL = 'http://localhost:8000'
+THREADS = 25
+REQUEST_QSIZE = 500
+
