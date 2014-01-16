@@ -1,7 +1,8 @@
 
 
-APP_KEY = 'wpOXBd8Oru1ankzyNsVh08WCszSnogxOS0Kq7zwuLpAtYEBktEFHbX1A1d9WYiCb'
-API_URL = 'http://localhost:8000'
+#APP_KEY = 'wpOXBd8Oru1ankzyNsVh08WCszSnogxOS0Kq7zwuLpAtYEBktEFHbX1A1d9WYiCb'
+APP_KEY = 'T9v3nBpKIn4hBkmtu1JH0nEtLiA5XXkndTnFAzrxkEOoSvB1rdUbF3YadIaAkWg3'
+API_URL = 'http://localhost:5586'
 THREADS = 25
 REQUEST_QSIZE = 500
 

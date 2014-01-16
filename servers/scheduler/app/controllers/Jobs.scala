@@ -111,6 +111,7 @@ object Jobs {
       val defaultParams = Scheduler.algoInfos.get(alg.infoid) map { _.params.mapValues(_.defaultvalue) } getOrElse Map[String, String]()
       command.setAttributes(command.attributes ++ defaultParams ++ alg.params)
       command.setAttribute("algoid", alg.id)
+      command.setAttribute("algoupdatetime", alg.updatetime.getMillis.toString)
       command.setAttribute("mahoutTempDir", BaseDir.algoDir(config.settingsHdfsRoot + "mahout_temp/", app.id, engine.id, alg.id, offlineEval.map(_.id)))
       command.setAttribute("algoDir", BaseDir.algoDir(config.settingsHdfsRoot, app.id, engine.id, alg.id, offlineEval.map(_.id)))
       command.setAttribute("dataFilePrefix", DataFile(config.settingsHdfsRoot, app.id, engine.id, alg.id, offlineEval.map(_.id), ""))
@@ -310,7 +311,9 @@ class BLessJob extends InterruptableJob {
           val starttime = DateTime.now
           Logger.info(s"${logPrefix}Launching job to process items without any associated behavioral actions")
           val batchcommands = Seq(
-            "python -m PredictionIO.experimental.realtime.realtime_recommendation --user_model=u.$algoid$.pkl --new_item=ni.$algoid$.tsv --output=o.$algoid$.tsv")
+            "python PredictionIO/experimental/realtime_dataprep.py --db_name $appdataDbName$ --db_host $appdataDbHost$ --db_port $appdataDbPort$ --appid $appid$ --starttime $algoupdatetime$ --output_items ni.$algoid$.tsv --output_itemsitypes it.$algoid$.tsv",
+            "python -m PredictionIO.experimental.realtime.realtime_recommendation --user_model=u.$algoid$.pkl --new_item=ni.$algoid$.tsv --output=o.$algoid$.tsv",
+            "python PredictionIO/experimental/realtime_modelcon.py --db_name $modeldataDbName$ --db_host $modeldataDbHost$ --db_port $modeldataDbPort$ --algoid $algoid$ --input_itemsitypes it.$algoid$.tsv --input_recommendation o.$algoid$.tsv")
           val commands = batchcommands map { c => Jobs.setSharedAttributes(new StringTemplate(c), config, app, engine, Some(algo), None, None, None).toString }
 
           commands map { _.trim } foreach { c =>
