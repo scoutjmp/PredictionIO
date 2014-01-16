@@ -11,17 +11,22 @@ from commons import is_custom_attributes
 from commons import ms_to_datetime
 from commons import datetime_to_ms
 
-def write_items_to_file(cursor, items_filename):
+
+def write_items_to_file(cursor, items_filename, itemsitypes_filename):
     """write items mongo cursor to a file 
     items_filename:
     iid<\t>starttime<\t>attribute separated by tab (arbitrary number of attributes)
     attribute is represent as 'name=value'
 
+    itemsitypes_filename:
+    iid<\t>itypes separated by tab (arbitrary number of itypes)
+
     :params cursor: mongo cursor
     :params items_filename: file name to be written
     """
-    with open(items_filename, 'wb') as f:
+    with open(items_filename, 'wb') as f, open(itemsitypes_filename, 'wb') as itemsitypes_f:
         writer = csv.writer(f, delimiter='\t')
+        itemsitypes_writer = csv.writer(itemsitypes_f, delimiter='\t')
 
         for item in cursor:
             custom_attr = dict((k,v) for k,v in item.iteritems() if is_custom_attributes(k))
@@ -39,46 +44,16 @@ def write_items_to_file(cursor, items_filename):
             #print row
             writer.writerow(row)
 
-def write_u2i_to_file(cursor, filename, implicit=False):
-    """process and write u2i mongo cursor to a file
-    uid<\t>iid<\t>pref<\t>timestamp in ISO format
-    if implicit preference is True:
-    uid<\t>iid<\t>timestamp in ISO format
+            itypes_row = [item['_id']] + item['itypes']
+            itemsitypes_writer.writerow(itypes_row)
 
-    NOTE: no filtering on same uid-iid action pair yet...
-
-    """
-    names = ['uid', 'iid', 'pref', 'time']
-
-    with open(filename, 'wb') as f:
-        writer = csv.writer(f, delimiter='\t')
-        for u2i in cursor:
-            if u2i['action'] != 'rate':
-                pref = 1 # use default preference value for implicit action
-            else:
-                pref = u2i['v']
-
-            #t = u2i['t'].isoformat()
-            t = datetime_to_ms(u2i['t'])
-
-            if implicit:
-                # no preference value
-                row = [u2i['uid'], u2i['iid'], t]
-            else:
-                row = [u2i['uid'], u2i['iid'], pref, t]
-            
-            writer.writerow(row)
-
-def batch_dataprep(db_name, db_host, db_port, appid, itypes, implicit, items_filename, pref_filename):
+def realtime_dataprep(db_name, db_host, db_port, appid, itypes, starttime, implicit, items_filename, itemsitypes_filename):
     """ read items from DB and write to file
     """
     mongo_items = MongoItems(db_name, db_host, db_port)
-    items = mongo_items.get_by_appid(appid, itypes)
-    write_items_to_file(items, items_filename)
-
-    mongo_u2i = MongoU2IActions(db_name, db_host, db_port)
-    u2i = mongo_u2i.get_by_appid(appid)
-    write_u2i_to_file(u2i, pref_filename, implicit)
+    # get recent new items
+    items = mongo_items.get_recent_by_appid(appid=appid, starttime=starttime, itypes=itypes)
+    write_items_to_file(items, items_filename, itemsitypes_filename)
 
 def main():
     parser = argparse.ArgumentParser(description="some description here..")
@@ -87,24 +62,25 @@ def main():
     parser.add_argument('--db_port', default=27017, type=int)
     parser.add_argument('--appid', type=int) # note must be integer
     parser.add_argument('--itypes')
+    parser.add_argument('--starttime', type=int) # in milliseconds
     parser.add_argument('--implicit', default=False) # means no explict rating
-    parser.add_argument('--output_items', default='test_items.tsv') # output items file name
-    parser.add_argument('--output_preference', default='test_ratings.tsv') # output preference file name
+    parser.add_argument('--output_items', default='test_realtime_items.tsv') # output items file name
+    parser.add_argument('--output_itemsitypes', default='test_realtime_itemsitypes.tsv') # output items file with itypes
 
     args = parser.parse_args()
     print args
 
-    batch_dataprep(
+    realtime_dataprep(
         db_name=args.db_name,
         db_host=args.db_host,
         db_port=args.db_port,
         appid=args.appid,
         itypes=args.itypes,
+        starttime=ms_to_datetime(args.starttime), # convert starttime from milliseconds to datetime
         implicit=args.implicit,
         items_filename=args.output_items,
-        pref_filename=args.output_preference)
+        itemsitypes_filename=args.output_itemsitypes)
 
 if __name__ == '__main__':
     main()
 
-   

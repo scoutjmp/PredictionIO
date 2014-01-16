@@ -53,3 +53,46 @@ class MongoU2IActions(object):
         """
         return self.u2iactions_coll.find({'appid': appid})
 
+
+class RealTimeItemRecScore(object):
+    """
+    RealTimeItemRecScore object
+    """
+    def __init__(self, uid, iid, score, time, itypes, algoid):
+        """
+        :param uid: string
+        :param iid: string
+        :param score: double
+        :param time: datetime.datetime
+        :param itypes: type List. eg. ['t1', 't2']
+        :param algoid: int
+        """
+        self.uid = uid
+        self.iid = iid
+        self.score = score
+        self.time = time
+        self.itypes = itypes
+        self.algoid = algoid
+
+class MongoRealTimeItemRecScores(object):
+    def __init__(self, db_name, db_host, db_port):
+        self.client = MongoClient(db_host, db_port)
+        self.modeldata_db = self.client[db_name]
+        self.realtimeitemrecscores_coll = self.modeldata_db['realtime_itemRecScores']
+        
+    def save(self, itemrec):
+        """Save the RealTimeItemRecScore into Mongo
+        :pram itemrec: RealTimeItemRecScore object
+        """
+        obj_id = "%s_%s_%s" % (itemrec.algoid, itemrec.uid, itemrec.iid)
+
+        obj = { '_id': obj_id,
+            'uid': itemrec.uid,
+            'iid': itemrec.iid,
+            'score': itemrec.score,
+            'time': itemrec.time,
+            'itypes': itemrec.itypes,
+            'algoid': itemrec.algoid}
+
+        self.realtimeitemrecscores_coll.save(obj)
+        

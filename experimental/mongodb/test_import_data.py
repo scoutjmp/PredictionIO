@@ -11,10 +11,10 @@ def import_testdata():
     client.create_user("u2")
     client.create_user("u3")
 
-    client.create_item("i0", ("t1",), {"custom1": "i0c1"})
-    client.create_item("i1", ("t1","t2"), {"custom1": "i1c1", "custom2": "i1c2"})
-    client.create_item("i2", ("t1","t2"), {"custom2": "i2c2"})
-    client.create_item("i3", ("t1",))
+    client.create_item("i0", ("t1",), {"custom1": "i0c1", "pio_startT" : 123456789001 })
+    client.create_item("i1", ("t1","t2"), {"custom1": "i1c1", "custom2": "i1c2", "pio_startT" : 123456789002 })
+    client.create_item("i2", ("t1","t2"), {"custom2": "i2c2", "pio_startT" : 123456789003 })
+    client.create_item("i3", ("t1",), { "pio_startT" : 123456789004 })
 
     client.identify("u0")
     client.record_action_on_item("rate", "i0", { "pio_rate": 2 })
