@@ -34,9 +34,9 @@ def realtime_modelcon(db_name, db_host, db_port, algoid, items_filename, recomme
             itemrec = RealTimeItemRecScore(
                 uid = rec_row[0],
                 iid = rec_row[1],
-                score = float(rec_row[2])
-                time = ms_to_datetime(rec_row[3]),
-                itypes = item_itypes_map[iid],
+                score = float(rec_row[2]),
+                time = ms_to_datetime(int(rec_row[3])),
+                itypes = item_itypes_map[rec_row[1]],
                 algoid = algoid
             )
             mongo_realtimeitemrec.save(itemrec)
@@ -49,6 +49,9 @@ def main():
     parser.add_argument('--algoid', type=int) # note must be integer
     parser.add_argument('--input_items', default='test_realtime_itemsitypes.tsv') # items file with itypes
     parser.add_argument('--input_recommendation', default='test_realtime_recommend.tsv')
+
+    args = parser.parse_args()
+    print args
 
     realtime_modelcon(
         db_name=args.db_name,
