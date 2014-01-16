@@ -68,6 +68,11 @@ cp -n $BASE/tools/users/target/universal/stage/lib/* $PACKAGE_DIR/lib
 mkdir -p $PACKAGE_DIR/vendors/mahout-distribution-0.8
 cp $VENDOR_MAHOUT/mahout-core-0.8-job.jar $PACKAGE_DIR/vendors/mahout-distribution-0.8
 
+mkdir -p $PACKAGE_DIR/PredictionIO
+cp -R $BASE/experimental $PACKAGE_DIR/PredictionIO
+touch $PACKAGE_DIR/PredictionIO/__init__.py
+touch $PACKAGE_DIR/PredictionIO/experimental/__init__.py
+
 cd $DIST_DIR/target
 rm "$PACKAGE_NAME.zip"
 zip -q -r "$PACKAGE_NAME.zip" "$PACKAGE_NAME"
