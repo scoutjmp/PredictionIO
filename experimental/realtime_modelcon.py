@@ -47,7 +47,7 @@ def main():
     parser.add_argument('--db_host', default='localhost')
     parser.add_argument('--db_port', default=27017, type=int)
     parser.add_argument('--algoid', type=int) # note must be integer
-    parser.add_argument('--input_items', default='test_realtime_itemsitypes.tsv') # items file with itypes
+    parser.add_argument('--input_itemsitypes', default='test_realtime_itemsitypes.tsv') # items file with itypes
     parser.add_argument('--input_recommendation', default='test_realtime_recommend.tsv')
 
     args = parser.parse_args()
@@ -58,7 +58,7 @@ def main():
         db_host=args.db_host,
         db_port=args.db_port,
         algoid=args.algoid,
-        items_filename=args.input_items,
+        items_filename=args.input_itemsitypes,
         recommend_filename=args.input_recommendation
         )
 
