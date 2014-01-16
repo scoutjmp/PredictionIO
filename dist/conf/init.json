@@ -296,6 +296,8 @@
             "name": "Random Rank",
             "description": "Predict user preferences randomly.",
             "batchcommands": [
+                "python PredictionIO/experimental/batch_dataprep.py --appid $appid$ --db_host $appdataDbHost$ --db_port $appdataDbPort$ --db_name $appdataDbName$ --output_items i.$algoid$.tsv --output_preference r.$algoid$.tsv",
+                "python -m PredictionIO.experimental.realtime.realtime_model --item=i.$algoid$.tsv --action=r.$algoid$.tsv --output=u.$algoid$.pkl",
                 "$hadoop$ jar $base$/lib/$pdioItemrecAlgo$ io.prediction.algorithms.scalding.itemrec.randomrank.RandomRank --hdfs --training_dbType $appdataDbType$ --training_dbName $appdataDbName$ --training_dbHost $appdataDbHost$ --training_dbPort $appdataDbPort$ --modeldata_dbType $modeldataDbType$ --modeldata_dbName $modeldataDbName$ --modeldata_dbHost $modeldataDbHost$ --modeldata_dbPort $modeldataDbPort$ --hdfsRoot $hdfsRoot$ --appid $appid$ --engineid $engineid$ --algoid $algoid$ --numRecommendations $numRecommendations$ --modelSet $modelset$"
             ],
             "offlineevalcommands": [

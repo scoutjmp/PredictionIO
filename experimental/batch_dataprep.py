@@ -104,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser(description="some description here..")
     parser.add_argument('--db_name', default='predictionio_appdata')
     parser.add_argument('--db_host', default='localhost')
-    parser.add_argument('--db_port', default=27017)
+    parser.add_argument('--db_port', default=27017, type=int)
     parser.add_argument('--appid', type=int) # note must be integer
     parser.add_argument('--itypes')
     parser.add_argument('--implicit', default=False) # means no explict rating

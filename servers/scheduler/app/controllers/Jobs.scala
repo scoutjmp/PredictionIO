@@ -309,7 +309,8 @@ class BLessJob extends InterruptableJob {
           Logger.info(s"${logPrefix}Recording start time")
           val starttime = DateTime.now
           Logger.info(s"${logPrefix}Launching job to process items without any associated behavioral actions")
-          val batchcommands = Seq("echo foobar")
+          val batchcommands = Seq(
+            "python -m PredictionIO.experimental.realtime.realtime_recommendation --user_model=u.$algoid$.pkl --new_item=ni.$algoid$.tsv --output=o.$algoid$.tsv")
           val commands = batchcommands map { c => Jobs.setSharedAttributes(new StringTemplate(c), config, app, engine, Some(algo), None, None, None).toString }
 
           commands map { _.trim } foreach { c =>
@@ -343,7 +344,7 @@ class BLessJob extends InterruptableJob {
             algos.setUpdateTime(algo.id, starttime)
             Logger.info(s"${logPrefix}Job completed")
           } else {
-            Logger.warn(s"${logPrefix}Not flipping model set flag because the algo job returned non-zero exit code")
+            Logger.warn(s"${logPrefix}Job returned non-zero exit code")
           }
 
         } getOrElse {
