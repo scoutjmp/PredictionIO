@@ -6,6 +6,8 @@ import pprint
 
 from app_config import APP_KEY, API_URL, THREADS, REQUEST_QSIZE
 
+data_dir = '../freebase/data/'
+
 def batch_import_task(app_data, client, all_info=False):
 
 	print "[Info] Importing users to PredictionIO..."
@@ -24,6 +26,17 @@ def batch_import_task(app_data, client, all_info=False):
 	sys.stdout.write('\r[Info] %s users were imported.\n' % count)
 	sys.stdout.flush()
 
+  	item_description_map = dict()
+	item_list = app_data._items.keys()
+	for iid in item_list:
+		fn = '{data_dir}{iid}.txt'.format(data_dir=data_dir, iid=iid)
+		with open(fn, 'r') as f:
+			name = f.readline().strip()
+			mid = f.readline().strip()
+			description = f.readline().strip()
+
+		item_description_map[iid] = description
+
 	print "[Info] Importing items to PredictionIO..."
 	count = 0
 	for k, v in app_data.get_items().iteritems():
@@ -39,7 +52,11 @@ def batch_import_task(app_data, client, all_info=False):
 		itypes = ("movie",)
 		attr = { "pio_startT" : v.release_date.isoformat() }
 		attr.update(dict(zip(v.genres, [1] * len(v.genres))))
+		if v.iid in item_description_map:
+			attr.update({"description" : item_description_map[v.iid]})
+
 		pprint.pprint(attr)
+
 		client.acreate_item(v.iid, itypes, attr)
 
 	sys.stdout.write('\r[Info] %s items were imported.\n' % count)
