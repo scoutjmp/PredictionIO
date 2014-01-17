@@ -26,7 +26,7 @@ def batch_import_task(app_data, client, all_info=False):
 	sys.stdout.write('\r[Info] %s users were imported.\n' % count)
 	sys.stdout.flush()
 
-  	item_description_map = dict()
+	item_description_map = dict()
 	item_list = app_data._items.keys()
 	for iid in item_list:
 		fn = '{data_dir}{iid}.txt'.format(data_dir=data_dir, iid=iid)
