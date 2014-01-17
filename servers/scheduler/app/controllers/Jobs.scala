@@ -311,7 +311,7 @@ class BLessJob extends InterruptableJob {
           val starttime = DateTime.now
           Logger.info(s"${logPrefix}Launching job to process items without any associated behavioral actions")
           val batchcommands = Seq(
-            "python PredictionIO/experimental/realtime_dataprep.py --db_name $appdataDbName$ --db_host $appdataDbHost$ --db_port $appdataDbPort$ --appid $appid$ --starttime $algoupdatetime$ --output_items ni.$algoid$.tsv --output_itemsitypes it.$algoid$.tsv",
+            "python PredictionIO/experimental/realtime_dataprep.py --db_name $appdataDbName$ --db_host $appdataDbHost$ --db_port $appdataDbPort$ --appid $appid$ --starttime $algoupdatetime$ --output_items ni.$algoid$.tsv --output_itemsitypes it.$algoid$.tsv --input_attr_model a.$algoid$.pkl",
             "python -m PredictionIO.experimental.realtime.realtime_recommendation --user_model=u.$algoid$.pkl --new_item=ni.$algoid$.tsv --output=o.$algoid$.tsv",
             "python PredictionIO/experimental/realtime_modelcon.py --db_name $modeldataDbName$ --db_host $modeldataDbHost$ --db_port $modeldataDbPort$ --algoid $algoid$ --input_itemsitypes it.$algoid$.tsv --input_recommendation o.$algoid$.tsv")
           val commands = batchcommands map { c => Jobs.setSharedAttributes(new StringTemplate(c), config, app, engine, Some(algo), None, None, None).toString }

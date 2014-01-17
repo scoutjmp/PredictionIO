@@ -25,7 +25,7 @@ def write_items_to_file(cursor, items_filename):
 
         for item in cursor:
             if 'ca_description' in item:
-                row = [item['_id'], item['ca_description']]
+                row = [item['_id'], item['ca_description'].encode("utf-8")]
                 writer.writerow(row)
 
 
