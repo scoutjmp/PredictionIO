@@ -24,8 +24,9 @@ def write_items_to_file(cursor, items_filename):
         writer = csv.writer(f, delimiter='\t')
 
         for item in cursor:
-            row = [item['_id'], item['ca_description']]
-            writer.writerow(row)
+            if 'ca_description' in item:
+                row = [item['_id'], item['ca_description']]
+                writer.writerow(row)
 
 
 def attr_dataprep(db_name, db_host, db_port, appid, itypes, items_filename):
