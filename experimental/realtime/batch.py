@@ -69,7 +69,8 @@ def RecommendUserList(item, item_attributes, user_df):
   if item_attributes:
     item_series = pandas.Series(0., index=user_df.index)
     for attribute in item_attributes:
-      item_series[attribute] = 1.
+      if attribute in user_df.index:
+        item_series[attribute] = 1.
   else:
     # if item has no attributes, assign equal weight
     item_series = pandas.Series(1., index=user_df.index)
